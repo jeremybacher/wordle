@@ -1,6 +1,6 @@
 # Wordle!
 
-Based on [Wordle](https://www.nytimes.com/games/wordle/index.html) NY Times.
+Based on [Wordle](https://www.nytimes.com/games/wordle/index.html) NY Times. Built with [Expo](https://react.dev/learn/start-a-new-react-project#expo) for React and TypeScript.
 
 ## Screenshots
 
