@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import {View, Text, StyleSheet, TouchableOpacity, Platform, Dimensions } from 'react-native';
 
 interface Square {
@@ -15,29 +15,29 @@ interface Grid {
 	rows: Row[];
 }
 
-const defaultGrid: Grid = {
-	rows: Array(6).fill(0).map(() => ({
-		squares: Array(5).fill(0).map(() => ({
-			letter: '',
-		})),
-	})),
-}
-
 const Wordle: React.FC = () => {
 	const answer = 'apple';
-		const [endGame, setEndGame] = useState<boolean>(false);
-	const [grid, setGrid] = useState<Grid>(defaultGrid);
+	const [endGame, setEndGame] = useState<boolean>(false);
+	const [grid, setGrid] = useState<Grid>({
+		rows: Array(6).fill(0).map(() => ({
+			squares: Array(5).fill(0).map(() => ({
+				letter: '',
+			})),
+		})),
+	});
 
-		const restartGrid = () => {
-			console.log("restartGrid")
-			setGrid(defaultGrid);
-		}
+	const playAgain = () => {
+		setEndGame(false);
+		setGrid({
+			rows: Array(6).fill(0).map(() => ({
+				squares: Array(5).fill(0).map(() => ({
+					letter: '',
+				})),
+			})),
+		});
+	}
 
-		useEffect(() => {
-			console.log("grid", grid);
-		}, [setGrid, grid]);
-
-	const checkGuess = () => {
+	const checkGuess = (): boolean => {
 		const answerArray = answer.split('');
 
 		const newGrid = { ...grid };
@@ -57,13 +57,13 @@ const Wordle: React.FC = () => {
 			});
 		});
 
-			setGrid(newGrid);
 		if (newGrid.rows.find(row => row.squares.every(square => square.color === 'green'))) {
+			alert("You win! Congratulations!");
 			setEndGame(true);
-			if (confirm("You win! Congratulations!\nDo you want to play again?")) {
-				restartGrid();
-			} 
+			return true;
 		}
+
+		return false;
 	};
 
 	const handleKeyPress = (key: string) => {
@@ -73,16 +73,17 @@ const Wordle: React.FC = () => {
 
 		if (!currentRow) {
 			if (key === 'enter') {
-				if (confirm("You lose!\nDo you want to play again?")) {
-					restartGrid();
-				} 
+				if (!checkGuess()) {
+					setEndGame(true);
+					alert("You lose!");
 				}
+			}
 			else if (key === 'del') {
 				newGrid.rows[5].squares[4].letter = '';
 				setGrid(newGrid);
-			} 
+				return;
+			}
 
-				setEndGame(true);
 			return;
 		}
 
@@ -102,7 +103,6 @@ const Wordle: React.FC = () => {
 			if (currentRowIndex > 0 && !newGrid.rows[currentRowIndex-1].squares[4].last && currentRowIndex > 0 && grid.rows[currentRowIndex-1].squares.every(square => square.letter !== '') && currentRow.squares.every(square => square.letter === '')) {
 				newGrid.rows[currentRowIndex-1].squares[4].last = true;
 
-				setGrid(newGrid);
 				checkGuess();
 			}
 		} else {
@@ -119,7 +119,7 @@ const Wordle: React.FC = () => {
 			}
 		}
 
-			setGrid(newGrid);
+		setGrid(newGrid);
 	};
 
 	return (
@@ -138,7 +138,18 @@ const Wordle: React.FC = () => {
 					</View>
 				))}
 			</View>
-			<Keyboard onKeyPress={handleKeyPress} disabled={endGame} />
+			{!endGame ? (
+				<Keyboard onKeyPress={handleKeyPress} />
+			) : (
+				<View style={styles.keyboard}>
+					<View style={styles.rowKey}>
+						<TouchableOpacity onPress={() => playAgain()}>
+							<Text style={styles.playAgain}>Play Again!</Text>
+						</TouchableOpacity>
+					</View>
+				</View>
+			)
+			}
 		</View>
 	);
 };
@@ -231,12 +242,34 @@ const styles = StyleSheet.create({
 		width: Dimensions.get('window').width / 8,
 		maxWidth: 60,
 		fontSize: 12,
+	},
+	playAgain: {
+		width: Dimensions.get('window').width / 2,
+		height: 60,
+		margin: 4,
+		backgroundColor: 'rgb(58 143 2)',
+		borderRadius: 5,
+		color: 'white',
+		fontSize: 20,
+		textTransform: 'uppercase',
+		textAlign: 'center',
+		textAlignVertical: 'center',
+		alignContent: 'center',
+		...Platform.select({
+			ios: {
+				lineHeight: 55,
+				overflow: 'hidden',
+			},
+			android: {
+				overflow: 'hidden',
+			}
+		}),
 	}
 });
 
 export default Wordle;
 
-const Keyboard: React.FC<{ onKeyPress: (key: string) => void, disabled: boolean }> = ({ onKeyPress, disabled }) => {
+const Keyboard: React.FC<{ onKeyPress: (key: string) => void }> = ({ onKeyPress }) => {
 	const rows = [
 		['q', 'w', 'e', 'r', 't', 'y', 'u', 'i', 'o', 'p'],
 		['a', 's', 'd', 'f', 'g', 'h', 'j', 'k', 'l'],
@@ -248,7 +281,7 @@ const Keyboard: React.FC<{ onKeyPress: (key: string) => void, disabled: boolean 
 			{rows.map((row, i) => (
 				<View style={styles.rowKey} key={i}>
 					{row.map((key) => (
-						<TouchableOpacity key={key} onPress={() => onKeyPress(key)} disabled={disabled}>
+						<TouchableOpacity key={key} onPress={() => onKeyPress(key)}>
 							<Text style={[styles.key, (key === 'enter' || key === 'del') && styles.actionKey]}>{key}</Text>
 						</TouchableOpacity>
 					))}
